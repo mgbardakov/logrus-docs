@@ -1,0 +1,153 @@
+@startuml
+title ЛОГРУС MVP — верхнеуровневая компонентная схема
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Inter
+skinparam defaultFontSize 13
+skinparam packageStyle rectangle
+skinparam ArrowColor #475569
+skinparam ComponentBorderColor #CBD5E1
+skinparam ComponentBackgroundColor #F8FAFC
+skinparam DatabaseBorderColor #CBD5E1
+skinparam DatabaseBackgroundColor #F8FAFC
+skinparam PackageBorderColor #CBD5E1
+skinparam PackageBackgroundColor #FFFFFF
+
+actor "B2B-пользователь\nGR / Legal / Compliance / Risk" as User
+actor "Аналитик ЛОГРУС\nручная проверка MVP" as Analyst
+
+cloud "Открытые источники P0" as Sources {
+  component "publication.pravo.gov.ru\nAPI / OpenData" as Pravo
+  component "regulation.gov.ru\nXML API / RSS" as Regulation
+  component "api.duma.gov.ru / СОЗД\nAPI" as Duma
+  component "kremlin.ru / government.ru\nRSS / HTML" as GovSites
+  component "mintrud.gov.ru\nRSS / OpenData" as Mintrud
+  component "trudvsem.ru\nAPI / OpenData" as Trudvsem
+}
+
+cloud "Внешний LLM API\nOpenAI / Qwen / MiniMax / DeepSeek" as LLMProvider
+
+package "ЛОГРУС MVP" as Logrus {
+  package "Frontend" {
+    component "Web UI\nсводка, события, карточка события,\nоснования и первоисточники" as WebUI
+  }
+
+  package "Backend" {
+    component "Application API\nREST MVP" as AppAPI
+    component "Auth & Workspace\nпользователи, организации, роли" as Auth
+    component "Admin Config\nисточники, темы, ключевые слова,\nрасписания" as AdminConfig
+    component "Notification Service\nemail / Telegram MVP" as Notify
+  }
+
+  package "Ingestion" {
+    component "Scheduler\nпериодический запуск сборщиков" as Scheduler
+    component "Source Connectors\nAPI / RSS / HTML fetchers" as Connectors
+    queue "Fetch Queue\nзадачи на обработку" as FetchQueue
+  }
+
+  package "Processing Pipeline" {
+    component "Parser & Text Extractor\nHTML / XML / PDF / text" as Parser
+    component "Normalizer\nсырой материал -> единый формат" as Normalizer
+    component "Event Extractor\nправила + LLM" as EventExtractor
+    component "Entity & Topic Tagger\nакторы, ведомства, темы, регионы" as Tagger
+    component "Deduplicator\nповторы и версии документов" as Dedup
+    component "Factual Relation Extractor\nссылки, общий документ,\nактор, стадия законопроекта" as FactualRelationExtractor
+    component "Thematic Relation Builder\nтема, семантика, время,\nрегион, институц. контекст" as ThematicRelationBuilder
+    component "Relation Scorer & Evidence\nтип связи, основания,\nconfidence" as RelationScorer
+    component "Hypothesis Builder\nаналитические гипотезы\nповерх событий и связей" as HypothesisBuilder
+    component "Daily Brief Generator\nежедневная сводка" as BriefGen
+    component "Review Queue\nнизкая уверенность,\nважные выводы" as ReviewQueue
+  }
+
+  package "AI Layer" {
+    component "LLM Gateway\nмаршрутизация моделей,\nкэш, промпты, лимиты" as LLMGateway
+    component "Embedding Service\nвекторизация событий\nи фрагментов текста" as Embedding
+  }
+
+  package "Storage" {
+    database "PostgreSQL + pgvector\nsources, documents, events,\nentities, topics, relations,\nrelation_topic_scores, evidence,\nhypotheses, briefs, users" as DB
+    folder "Raw Store\nHTML / XML / PDF / text snapshots" as RawStore
+  }
+
+  package "Observability" {
+    component "Logs & Metrics\nошибки сборщиков,\nстоимость LLM, качество разметки" as LogsMetrics
+  }
+}
+
+User --> WebUI : работает со сводкой\nи карточками событий
+WebUI --> AppAPI : запросы UI
+AppAPI --> Auth : проверка доступа
+AppAPI --> DB : чтение событий,\nсвязей, сводок
+AppAPI --> Notify : настройки алертов
+Analyst --> ReviewQueue : проверяет спорные\nсвязи и выводы
+Analyst --> AdminConfig : настраивает темы\nи источники
+
+AdminConfig --> Scheduler : расписания\nи фильтры
+Scheduler --> Connectors : запуск сборщиков
+Sources --> Connectors : API / RSS / HTML
+Connectors --> RawStore : сохранить сырой снимок
+Connectors --> FetchQueue : поставить материал\nв обработку
+
+FetchQueue --> Parser
+Parser --> Normalizer
+Normalizer --> DB : document/material
+Normalizer --> EventExtractor
+EventExtractor --> LLMGateway : извлечение событий\nиз сложных текстов
+EventExtractor --> DB : events + quotes
+EventExtractor --> Tagger
+Tagger --> Embedding : embeddings
+Tagger --> DB : entities + topics
+Embedding --> DB : vectors
+
+DB --> Dedup : новые события\nи документы
+Dedup --> DB : canonical events,\nversions
+Dedup --> FactualRelationExtractor
+Dedup --> ThematicRelationBuilder
+FactualRelationExtractor --> DB : factual relations\n+ evidence
+ThematicRelationBuilder --> DB : поиск близких событий\nпо темам, векторам, датам
+ThematicRelationBuilder --> RelationScorer
+FactualRelationExtractor --> RelationScorer
+RelationScorer --> LLMGateway : объяснение тематической\nсвязи при необходимости
+RelationScorer --> DB : relations {factual|thematic}\n+ topic score + evidence
+RelationScorer --> HypothesisBuilder
+HypothesisBuilder --> DB : цепочки событий,\nсвязи, evidence
+HypothesisBuilder --> LLMGateway : формулировка гипотезы\nи контраргументов
+HypothesisBuilder --> DB : analytical hypotheses\n+ confidence
+RelationScorer --> ReviewQueue : если confidence низкий\nили событие критичное
+HypothesisBuilder --> ReviewQueue : важные гипотезы\nдля ручной проверки
+ReviewQueue --> DB : подтверждение / правка
+
+BriefGen --> DB : события + связи\n+ гипотезы за период
+BriefGen --> LLMGateway : формулировка сводки
+BriefGen --> DB : daily brief
+BriefGen --> Notify : важные события\nпо подпискам
+Notify --> User : email / Telegram
+
+LLMGateway --> LLMProvider : completion / reasoning
+Embedding --> LLMProvider : embeddings\nесли внешний провайдер
+
+Connectors ..> LogsMetrics : status/errors
+EventExtractor ..> LogsMetrics : quality/cost
+RelationScorer ..> LogsMetrics : relation confidence/cost
+HypothesisBuilder ..> LogsMetrics : hypothesis confidence/cost
+AppAPI ..> LogsMetrics : usage/errors
+
+note right of DB
+  Для MVP не нужен отдельный graph DB.
+  Связи хранятся в PostgreSQL:
+  events -> relations -> evidence.
+  Типы:
+  - factual relation
+  - thematic relation
+  - analytical hypothesis
+end note
+
+note bottom of Logrus
+  MVP-принцип: модульный монолит + async worker.
+  Не микросервисы. Главная проверка — ценность
+  цепочки "событие -> связь -> основание -> вывод".
+end note
+
+@enduml

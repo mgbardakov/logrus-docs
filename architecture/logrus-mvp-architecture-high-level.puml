@@ -1,0 +1,90 @@
+@startuml
+title ЛОГРУС MVP — абстрактная компонентная схема
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Inter
+skinparam defaultFontSize 14
+skinparam packageStyle rectangle
+skinparam ArrowColor #475569
+skinparam ComponentBorderColor #CBD5E1
+skinparam ComponentBackgroundColor #F8FAFC
+skinparam DatabaseBorderColor #CBD5E1
+skinparam DatabaseBackgroundColor #F8FAFC
+skinparam PackageBorderColor #CBD5E1
+skinparam PackageBackgroundColor #FFFFFF
+
+actor "Пользователь\nGR / Legal / Compliance / Risk" as User
+actor "Аналитик\nручная проверка MVP" as Analyst
+
+cloud "Открытые источники" as Sources {
+  component "НПА и проекты НПА" as LegalSources
+  component "Прямая речь\nи решения власти" as SpeechSources
+  component "Труд, бюджет,\nпроверки, статистика" as FactSources
+}
+
+package "ЛОГРУС MVP" as Logrus {
+  component "Тематическая конфигурация\nисточники, словари, правила,\nвеса и алерты" as TopicConfig
+
+  component "Сбор данных\nAPI / RSS / HTML" as Ingestion
+
+  component "Нормализация\nсырой материал -> единый документ" as Normalization
+
+  component "Извлечение событий\nчто произошло, где, когда,\nкто связан" as EventLayer
+
+  component "Построение связей\nфактические связи,\nтематические связи,\nаналитические гипотезы" as RelationLayer
+
+  database "Хранилище знаний\nдокументы, события, сущности,\nсвязи, evidence, гипотезы" as KnowledgeStore
+
+  component "Аналитический слой\nсводки, объяснения,\nконтраргументы, confidence" as Analytics
+
+  component "Продуктовый интерфейс\nсводка, карточка события,\nоснования, первоисточники" as ProductUI
+}
+
+cloud "LLM / Embeddings" as AI {
+  component "Извлечение,\nклассификация,\nобъяснение" as AIModels
+}
+
+Sources --> Ingestion : открытые данные\nи публикации
+TopicConfig --> Ingestion : что собирать
+TopicConfig --> EventLayer : что считать релевантным
+TopicConfig --> RelationLayer : как строить\nтематические связи
+TopicConfig --> Analytics : как формировать\nсводки и алерты
+
+Ingestion --> Normalization
+Normalization --> EventLayer
+EventLayer --> KnowledgeStore : события,\nсущности, темы
+EventLayer --> AIModels : извлечение\nиз сложных текстов
+
+KnowledgeStore --> RelationLayer : события,\nсущности, документы
+RelationLayer --> AIModels : объяснение связей\nи гипотез
+RelationLayer --> KnowledgeStore : связи,\nevidence, гипотезы
+
+KnowledgeStore --> Analytics : события + связи\n+ гипотезы
+Analytics --> AIModels : формулировка\nсводок и выводов
+Analytics --> KnowledgeStore : аналитические заметки\nи сводки
+
+KnowledgeStore --> ProductUI
+ProductUI --> User : проверяемая аналитика\nс первоисточниками
+Analyst --> KnowledgeStore : ручная проверка\nважных связей и гипотез
+Analyst --> TopicConfig : настройка темы MVP
+
+note right of RelationLayer
+  Важно:
+  фактическая связь != тематическая связь != гипотеза.
+
+  Фактическая связь проверяема.
+  Тематическая связь контекстна.
+  Гипотеза требует оснований,
+  контраргументов и confidence.
+end note
+
+note bottom of Logrus
+  MVP-фокус: мобилизационные и военно-экономические
+  риски для бизнеса. Архитектура должна позволять
+  добавить новые темы через конфигурацию, источники,
+  словари и паттерны, а не переписывание ядра.
+end note
+
+@enduml

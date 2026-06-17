@@ -27,8 +27,9 @@
 docker compose up
 (cd logrus-api && ./gradlew bootRun)
 (cd logrus-bff && ./gradlew bootRun)
-npm install
-npm start
+(cd logrus-bff/logrus-ui && pnpm install)
+(cd logrus-bff/logrus-ui && pnpm start)
+(cd logrus-bff/logrus-ui && pnpm build:static)
 (cd logrus-api && ./gradlew test)
 (cd logrus-bff && ./gradlew test)
 ```

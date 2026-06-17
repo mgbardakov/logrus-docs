@@ -61,7 +61,7 @@ Angular UI -> Spring Boot Kotlin BFF -> Spring Boot Kotlin API -> PostgreSQL / M
 
 Важно: `logrus-api` и `logrus-bff` живут в одном верхнеуровневом проекте/workspace для разработки и локального запуска, но являются **разными Git-репозиториями**. Это не Gradle multi-module repository.
 
-Frontend Angular живет как отдельное приложение и интегрируется через BFF. Финальное размещение frontend-кода можно выбрать отдельно: отдельный репозиторий или часть BFF-репозитория, если BFF будет сервировать собранный Angular bundle.
+Frontend Angular живет как отдельное приложение внутри репозитория `logrus-bff` в директории `logrus-ui` и интегрируется через BFF. Для packaged MVP BFF сервирует собранный Angular bundle из Spring Boot static resources.
 
 Причина выбора:
 
@@ -77,7 +77,8 @@ Frontend Angular живет как отдельное приложение и и
 logrus-workspace/
   logrus-api/     # git repo: backend core
   logrus-bff/     # git repo: BFF
-  logrus-ui/      # placement TBD: отдельный repo или внутри BFF repo
+    logrus-ui/    # Angular frontend внутри BFF repo
+    src/main/resources/static/ # собранная статика Angular
   logrus-infra/   # placement TBD: отдельный repo или локальная infra-директория
 ```
 
@@ -125,7 +126,7 @@ logrus-workspace/
 - пользовательские сессии;
 - базовую авторизацию UI;
 - проксирование/изоляцию внутренних API;
-- опционально — serving Angular static assets.
+- serving Angular static assets.
 
 ### Angular frontend
 
@@ -389,7 +390,7 @@ GET /bff/review/items
 - MinIO;
 - logrus-api;
 - logrus-bff;
-- Angular dev server или собранный static bundle через BFF.
+- Angular dev server для разработки или собранный static bundle через BFF.
 
 Команды будут уточнены при реализации, но целевое состояние:
 

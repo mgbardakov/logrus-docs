@@ -66,7 +66,7 @@ GET /api/internal/sources
 
 ## Acceptance Criteria
 
-- Application context test проходит.
+- Focused integration/smoke tests проходят без пустого `contextLoads`.
 - `/actuator/health` возвращает `UP`.
 - Приложение подключается к PostgreSQL.
 - Liquibase запускается при старте.

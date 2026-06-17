@@ -22,16 +22,16 @@
 ## Стартовые changelog-группы
 
 ```text
-000-init-schema.yaml
-010-auth-users.yaml
-020-sources.yaml
-030-documents-raw-snapshots.yaml
-040-topics.yaml
-050-events.yaml
-060-entities.yaml
-070-relations-evidence.yaml
-080-hypotheses-briefs.yaml
-090-review-observability.yaml
+1-init-schema.yaml
+2-auth-users.yaml
+3-sources.yaml
+4-documents-raw-snapshots.yaml
+5-topics.yaml
+6-events.yaml
+7-entities.yaml
+8-relations-evidence.yaml
+9-hypotheses-briefs.yaml
+10-review-observability.yaml
 ```
 
 ## Минимальные таблицы
@@ -57,7 +57,6 @@
 ## Зависимости
 
 - `02-local-infrastructure.md`
-- `04-logrus-api-skeleton.md`
 
 ## Результат
 

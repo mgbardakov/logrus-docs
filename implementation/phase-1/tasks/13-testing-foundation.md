@@ -11,8 +11,8 @@
 ## Работы
 
 - Настроить test dependencies.
-- Добавить application context tests для `logrus-api`.
-- Добавить application context tests для `logrus-bff`.
+- Добавить focused integration/smoke tests для `logrus-api`.
+- Добавить focused integration/smoke tests для `logrus-bff`.
 - Добавить Testcontainers для PostgreSQL.
 - Добавить тест Liquibase migrations.
 - Добавить smoke test MinIO raw store.
@@ -24,20 +24,22 @@
 
 ```text
 logrus-api:
-  context loads
   liquibase applies on clean db
   health endpoint works
   raw store write/read works
   topic config loads
+  brief list endpoint returns stub/list model
 
 logrus-bff:
-  context loads
   health endpoint works
-  dashboard endpoint returns stub model
+  dashboard endpoint returns panel metrics
+  briefs endpoint returns list
+  packaged UI routes forward to Angular index
 
 frontend:
   app renders
-  dashboard component renders
+  dashboard/panel component renders
+  briefs page renders
 ```
 
 ## Зависимости
@@ -58,7 +60,7 @@ frontend:
 - Backend tests проходят локально.
 - Liquibase test проходит на чистой БД.
 - Raw store test пишет и читает объект.
-- BFF test проверяет dashboard endpoint.
+- BFF test проверяет dashboard endpoint и список сводок.
 - Frontend basic tests проходят.
 
 ## Не входит

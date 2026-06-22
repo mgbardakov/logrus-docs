@@ -28,18 +28,22 @@ logrus-api:
   health endpoint works
   raw store write/read works
   topic config loads
+  relation model keeps event-entity links outside relations
+  relation stubs do not use PRECEDES as standalone relation type
   brief list endpoint returns stub/list model
 
 logrus-bff:
   health endpoint works
   dashboard endpoint returns panel metrics
   briefs endpoint returns list
+  event detail separates direct facts from related events
   packaged UI routes forward to Angular index
 
 frontend:
   app renders
   dashboard/panel component renders
   briefs page renders
+  event detail renders facts block and related events block
 ```
 
 ## Зависимости
@@ -61,6 +65,7 @@ frontend:
 - Liquibase test проходит на чистой БД.
 - Raw store test пишет и читает объект.
 - BFF test проверяет dashboard endpoint и список сводок.
+- Тесты фиксируют, что `relations` используются для связей событие-событие, а прямые факты события отображаются отдельно.
 - Frontend basic tests проходят.
 
 ## Не входит

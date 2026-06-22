@@ -22,6 +22,9 @@
   - количество raw snapshots;
   - ошибки raw store;
   - количество событий;
+  - количество кандидатных связей событие-событие;
+  - количество подтвержденных/отклоненных связей;
+  - распределение confidence по связям;
   - будущие LLM calls/cost placeholders.
 
 ## Минимальные endpoints
@@ -48,6 +51,7 @@ GET /actuator/metrics
 - Health endpoint показывает состояние MinIO или raw store service.
 - Source run errors логируются.
 - Метрики можно открыть через actuator.
+- Есть placeholders метрик для будущего relation scoring и review решений.
 
 ## Не входит
 

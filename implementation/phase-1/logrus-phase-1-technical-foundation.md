@@ -216,7 +216,7 @@ ru.logrus.api
 - `event` — события;
 - `entity` — акторы, ведомства, регионы, организации;
 - `topic` — конфигурации тем;
-- `relation` — фактические и тематические связи;
+- `relation` — связи событие-событие, с evidence и тематическим скорингом;
 - `evidence` — основания связей и выводов;
 - `hypothesis` — аналитические гипотезы;
 - `brief` — сводки;
@@ -288,6 +288,8 @@ db/changelog
 - `analytical_hypotheses`;
 - `briefs`;
 - `review_items`.
+
+В стартовой модели `events`, `entities` и `topics` образуют один логический граф знаний, но прямые ребра ground graph хранятся отдельными таблицами: `event_entities`, `event_topics`, `documents`, `raw_snapshots`. Таблица `relations` в Phase 1 резервируется только под связи событие-событие. Временной порядок, общий актор или общее ведомство являются признаками и evidence для связи, но не самостоятельной причиной записывать все события в одну цепочку.
 
 Для фазы 1 допускается создать часть таблиц заранее, даже если бизнес-логика появится в фазах 2-5. Это снизит миграционную суету при детализации пайплайна.
 
@@ -376,7 +378,7 @@ GET /api/internal/topics
 GET /bff/dashboard
 GET /bff/events
 GET /bff/events/{id}
-GET /bff/briefs/latest
+GET /bff/briefs
 GET /bff/review/items
 ```
 
@@ -410,8 +412,8 @@ docker compose up
 
 Минимальные проверки:
 
-- application context test для `logrus-api`;
-- application context test для `logrus-bff`;
+- focused smoke/integration tests для `logrus-api`;
+- focused smoke/integration tests для `logrus-bff`;
 - тест Liquibase migrations на чистой БД;
 - интеграционный тест PostgreSQL через Testcontainers;
 - интеграционный тест MinIO через Testcontainers или локальный container;

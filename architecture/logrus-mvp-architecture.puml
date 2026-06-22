@@ -53,7 +53,7 @@ package "ЛОГРУС MVP" as Logrus {
     component "Event Extractor\nправила + LLM" as EventExtractor
     component "Entity & Topic Tagger\nакторы, ведомства, темы, регионы" as Tagger
     component "Deduplicator\nповторы и версии документов" as Dedup
-    component "Factual Relation Extractor\nссылки, общий документ,\nактор, стадия законопроекта" as FactualRelationExtractor
+    component "Factual Relation Extractor\nссылки, общий документ,\nстадия законопроекта" as FactualRelationExtractor
     component "Thematic Relation Builder\nтема, семантика, время,\nрегион, институц. контекст" as ThematicRelationBuilder
     component "Relation Scorer & Evidence\nтип связи, основания,\nconfidence" as RelationScorer
     component "Hypothesis Builder\nаналитические гипотезы\nповерх событий и связей" as HypothesisBuilder
@@ -79,7 +79,7 @@ package "ЛОГРУС MVP" as Logrus {
 User --> WebUI : работает со сводкой\nи карточками событий
 WebUI --> AppAPI : запросы UI
 AppAPI --> Auth : проверка доступа
-AppAPI --> DB : чтение событий,\nсвязей, сводок
+AppAPI --> DB : чтение событий,\nпрямых фактов, связей, сводок
 AppAPI --> Notify : настройки алертов
 Analyst --> ReviewQueue : проверяет спорные\nсвязи и выводы
 Analyst --> AdminConfig : настраивает темы\nи источники
@@ -98,19 +98,19 @@ EventExtractor --> LLMGateway : извлечение событий\nиз сло
 EventExtractor --> DB : events + quotes
 EventExtractor --> Tagger
 Tagger --> Embedding : embeddings
-Tagger --> DB : entities + topics
+Tagger --> DB : entities + topics\n+ прямые связи события
 Embedding --> DB : vectors
 
 DB --> Dedup : новые события\nи документы
 Dedup --> DB : canonical events,\nversions
 Dedup --> FactualRelationExtractor
 Dedup --> ThematicRelationBuilder
-FactualRelationExtractor --> DB : factual relations\n+ evidence
+FactualRelationExtractor --> DB : фактические связи\nсобытие-событие + evidence
 ThematicRelationBuilder --> DB : поиск близких событий\nпо темам, векторам, датам
 ThematicRelationBuilder --> RelationScorer
 FactualRelationExtractor --> RelationScorer
 RelationScorer --> LLMGateway : объяснение тематической\nсвязи при необходимости
-RelationScorer --> DB : relations {factual|thematic}\n+ topic score + evidence
+RelationScorer --> DB : связи событие-событие\n{factual|thematic}\n+ topic score + evidence
 RelationScorer --> HypothesisBuilder
 HypothesisBuilder --> DB : цепочки событий,\nсвязи, evidence
 HypothesisBuilder --> LLMGateway : формулировка гипотезы\nи контраргументов
@@ -136,12 +136,19 @@ AppAPI ..> LogsMetrics : usage/errors
 
 note right of DB
   Для MVP не нужен отдельный graph DB.
-  Связи хранятся в PostgreSQL:
-  events -> relations -> evidence.
-  Типы:
+  Прямые факты хранятся отдельно:
+  event_entities, event_topics,
+  documents, raw_snapshots.
+
+  relations = только связи
+  событие-событие + evidence.
+  Уровни:
   - factual relation
   - thematic relation
   - analytical hypothesis
+
+  PRECEDES не является
+  самостоятельным relation type.
 end note
 
 note bottom of Logrus

@@ -33,9 +33,9 @@ package "ЛОГРУС MVP" as Logrus {
 
   component "Извлечение событий\nчто произошло, где, когда,\nкто связан" as EventLayer
 
-  component "Построение связей\nфактические связи,\nтематические связи,\nаналитические гипотезы" as RelationLayer
+  component "Построение связей\nсвязи событие-событие,\nтематические связи,\nаналитические гипотезы" as RelationLayer
 
-  database "Хранилище знаний\nдокументы, события, сущности,\nсвязи, evidence, гипотезы" as KnowledgeStore
+  database "Хранилище знаний\nдокументы, события, сущности,\nпрямые факты, связи, evidence,\nгипотезы" as KnowledgeStore
 
   component "Аналитический слой\nсводки, объяснения,\nконтраргументы, confidence" as Analytics
 
@@ -59,7 +59,7 @@ EventLayer --> AIModels : извлечение\nиз сложных тексто
 
 KnowledgeStore --> RelationLayer : события,\nсущности, документы
 RelationLayer --> AIModels : объяснение связей\nи гипотез
-RelationLayer --> KnowledgeStore : связи,\nevidence, гипотезы
+RelationLayer --> KnowledgeStore : связи событие-событие,\nevidence, гипотезы
 
 KnowledgeStore --> Analytics : события + связи\n+ гипотезы
 Analytics --> AIModels : формулировка\nсводок и выводов
@@ -74,8 +74,13 @@ note right of RelationLayer
   Важно:
   фактическая связь != тематическая связь != гипотеза.
 
+  Прямые привязки события к сущностям,
+  темам и документам хранятся отдельно.
+
   Фактическая связь проверяема.
   Тематическая связь контекстна.
+  Временной порядок сам по себе
+  не является связью.
   Гипотеза требует оснований,
   контраргументов и confidence.
 end note
